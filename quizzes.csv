@@ -1,0 +1,5 @@
+id,title,negativePointsEnabled,timeLimitSeconds
+3,New Quiz,true,90
+4,bnl,true,6
+1,Java Basics,false,120
+2,Spring Boot Intro,true,180

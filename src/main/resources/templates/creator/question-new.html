@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+    <h1 class="h3 mb-3" th:text="'New question • ' + ${quiz.title}">New question</h1>
+
+    <form th:action="@{|/creator/quizzes/${quiz.id}/questions|}" th:object="${form}" method="post">
+        <input type="hidden" th:field="*{quizId}"/>
+
+        <div class="mb-3">
+            <label class="form-label">Type</label>
+            <select class="form-select" th:field="*{type}">
+                <option th:each="t : ${types}" th:value="${t}" th:text="${t}"></option>
+            </select>
+            <div class="text-danger" th:errors="*{type}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Prompt</label>
+            <textarea class="form-control" rows="3" th:field="*{prompt}"></textarea>
+            <div class="text-danger" th:errors="*{prompt}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Points</label>
+            <input class="form-control" type="number" min="0" th:field="*{points}"/>
+            <div class="text-danger" th:errors="*{points}"></div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Options JSON (optional)</label>
+            <textarea class="form-control font-monospace" rows="3" th:field="*{optionsJson}"></textarea>
+            <div class="form-text">Examples: ["A","B","C"] or {"left":[...],"right":[...]}</div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Answer key JSON (required)</label>
+            <textarea class="form-control font-monospace" rows="4" th:field="*{answerKeyJson}"></textarea>
+            <div class="form-text">
+                SINGLE_CHOICE: {"value":"A"} • MULTI_CHOICE: {"values":["A","C"]} • MATCHING: {"pairs":{"A":"1"}}
+            </div>
+            <div class="text-danger" th:errors="*{answerKeyJson}"></div>
+        </div>
+
+        <button class="btn btn-primary" type="submit">Create</button>
+        <a class="btn btn-secondary" th:href="@{|/creator/quizzes/${quiz.id}/questions|}">Cancel</a>
+    </form>
+</div>
+</body>
+</html>

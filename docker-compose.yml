@@ -1,0 +1,29 @@
+services:
+  db:
+    image: postgres:16
+    container_name: quizapp-db
+    environment:
+      POSTGRES_DB: quizapp
+      POSTGRES_USER: quizapp
+      POSTGRES_PASSWORD: quizapp
+    ports:
+      - "5432:5432"
+    volumes:
+      - quizapp_pgdata:/var/lib/postgresql/data
+
+  app:
+    build: .
+    container_name: quizapp-app
+    depends_on:
+      - db
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/quizapp
+      SPRING_DATASOURCE_USERNAME: quizapp
+      SPRING_DATASOURCE_PASSWORD: quizapp
+      JAVA_OPTS: "-Xms256m -Xmx512m"
+    ports:
+      - "8080:8080"
+
+volumes:
+  quizapp_pgdata:

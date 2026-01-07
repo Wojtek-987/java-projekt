@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Quizzes</h1>
+        <div class="btn-group">
+            <a class="btn btn-outline-secondary" href="/api/v1/files/export/quizzes.csv">Export CSV</a>
+            <a class="btn btn-outline-secondary" href="/api/v1/files/export/quizzes.pdf">Export PDF</a>
+        </div>
+        <a class="btn btn-primary" th:href="@{/creator/quizzes/new}">New quiz</a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+                <th>ID</th>
+                <th>Title</th>
+                <th>Negative points</th>
+                <th>Time limit (s)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="q : ${quizzes}">
+                <td th:text="${q.id}">1</td>
+                <td th:text="${q.title}">Title</td>
+                <td th:text="${q.negativePointsEnabled}">false</td>
+                <td th:text="${q.timeLimitSeconds}">120</td>
+                <td>
+                    <a class="btn btn-sm btn-outline-primary"
+                       th:href="@{|/creator/quizzes/${q.id}/questions|}">
+                        Questions
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/head :: head(${title})}"></head>
+<body>
+<div th:replace="~{fragments/nav :: nav}"></div>
+
+<main class="container py-4">
+    <div th:if="${flashMessage}" class="alert alert-success" th:text="${flashMessage}"></div>
+
+    <div th:replace="~{${contentTemplate} :: ${contentFragment}}"></div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
