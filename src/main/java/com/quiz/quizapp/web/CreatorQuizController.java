@@ -1,7 +1,6 @@
 package com.quiz.quizapp.web;
 
-import com.quiz.quizapp.api.dto.CreateQuizRequest;
-import com.quiz.quizapp.domain.service.QuizService;
+import com.quiz.quizapp.application.creator.CreatorQuizFacade;
 import com.quiz.quizapp.web.dto.CreateQuizForm;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.PageRequest;
@@ -15,15 +14,15 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @RequestMapping("/creator/quizzes")
 public class CreatorQuizController {
 
-    private final QuizService quizService;
+    private final CreatorQuizFacade creatorQuizFacade;
 
-    public CreatorQuizController(QuizService quizService) {
-        this.quizService = quizService;
+    public CreatorQuizController(CreatorQuizFacade creatorQuizFacade) {
+        this.creatorQuizFacade = creatorQuizFacade;
     }
 
     @GetMapping
     public String list(Model model) {
-        var page = quizService.list(PageRequest.of(0, 50));
+        var page = creatorQuizFacade.list(PageRequest.of(0, 50));
 
         model.addAttribute("quizzes", page.getContent());
         model.addAttribute("title", "Creator • Quizzes");
@@ -54,21 +53,12 @@ public class CreatorQuizController {
     ) {
         if (binding.hasErrors()) {
             model.addAttribute("title", "Creator • New quiz");
-
             model.addAttribute("contentTemplate", "creator/quiz-new");
             model.addAttribute("contentFragment", "content");
-
             return "fragments/layout";
         }
 
-        quizService.create(new CreateQuizRequest(
-                form.getTitle(),
-                form.getDescription(),
-                form.isRandomiseQuestions(),
-                form.isRandomiseAnswers(),
-                form.getTimeLimitSeconds(),
-                form.isNegativePointsEnabled()
-        ));
+        creatorQuizFacade.create(form);
 
         ra.addFlashAttribute("flashMessage", "Quiz created.");
         return "redirect:/creator/quizzes";

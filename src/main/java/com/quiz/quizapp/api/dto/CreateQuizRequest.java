@@ -1,6 +1,8 @@
 package com.quiz.quizapp.api.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 public record CreateQuizRequest(
@@ -8,6 +10,6 @@ public record CreateQuizRequest(
         @Size(max = 1000) String description,
         boolean randomiseQuestions,
         boolean randomiseAnswers,
-        Integer timeLimitSeconds,
+        @Positive @Max(36000) Integer timeLimitSeconds,
         boolean negativePointsEnabled
 ) {}

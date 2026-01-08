@@ -6,5 +6,5 @@ import jakarta.validation.constraints.NotEmpty;
 import java.util.List;
 
 public record SubmitAnswersRequest(
-        @NotEmpty @Valid List<SubmitAnswerRequest> answers
+        @NotEmpty List<SubmitAnswerRequest> answers
 ) {}

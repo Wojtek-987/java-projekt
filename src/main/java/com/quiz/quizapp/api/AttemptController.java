@@ -1,8 +1,12 @@
 package com.quiz.quizapp.api;
 
-import com.quiz.quizapp.api.dto.*;
-import com.quiz.quizapp.domain.jdbc.RankingJdbcDao;
+import com.quiz.quizapp.api.dto.AttemptResponse;
+import com.quiz.quizapp.api.dto.FinishAttemptRequest;
+import com.quiz.quizapp.api.dto.RankingRowResponse;
+import com.quiz.quizapp.api.dto.StartAttemptRequest;
+import com.quiz.quizapp.domain.dto.AttemptInfo;
 import com.quiz.quizapp.domain.service.AttemptService;
+import com.quiz.quizapp.domain.service.RankingService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -14,11 +18,11 @@ import java.util.List;
 public class AttemptController {
 
     private final AttemptService attemptService;
-    private final RankingJdbcDao rankingJdbcDao;
+    private final RankingService rankingService;
 
-    public AttemptController(AttemptService attemptService, RankingJdbcDao rankingJdbcDao) {
+    public AttemptController(AttemptService attemptService, RankingService rankingService) {
         this.attemptService = attemptService;
-        this.rankingJdbcDao = rankingJdbcDao;
+        this.rankingService = rankingService;
     }
 
     @PostMapping("/quizzes/{quizId}/attempts")
@@ -26,7 +30,8 @@ public class AttemptController {
             @PathVariable long quizId,
             @Valid @RequestBody StartAttemptRequest request
     ) {
-        return ResponseEntity.ok(attemptService.start(quizId, request));
+        AttemptInfo info = attemptService.start(quizId, request.nickname());
+        return ResponseEntity.ok(toResponse(info));
     }
 
     @PostMapping("/attempts/{attemptId}/finish")
@@ -34,7 +39,8 @@ public class AttemptController {
             @PathVariable long attemptId,
             @Valid @RequestBody FinishAttemptRequest request
     ) {
-        return ResponseEntity.ok(attemptService.finish(attemptId, request));
+        AttemptInfo info = attemptService.finish(attemptId, request.score());
+        return ResponseEntity.ok(toResponse(info));
     }
 
     @GetMapping("/quizzes/{quizId}/ranking")
@@ -42,6 +48,17 @@ public class AttemptController {
             @PathVariable long quizId,
             @RequestParam(defaultValue = "10") int limit
     ) {
-        return ResponseEntity.ok(rankingJdbcDao.topForQuiz(quizId, limit));
+        return ResponseEntity.ok(rankingService.topForQuiz(quizId, limit));
+    }
+
+    private AttemptResponse toResponse(AttemptInfo a) {
+        return new AttemptResponse(
+                a.id(),
+                a.quizId(),
+                a.nickname(),
+                a.score(),
+                a.startedAt(),
+                a.finishedAt()
+        );
     }
 }

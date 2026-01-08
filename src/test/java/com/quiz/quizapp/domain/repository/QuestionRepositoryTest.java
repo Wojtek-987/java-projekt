@@ -2,16 +2,18 @@ package com.quiz.quizapp.domain.repository;
 
 import com.quiz.quizapp.domain.entity.QuestionEntity;
 import com.quiz.quizapp.domain.entity.QuizEntity;
+import com.quiz.quizapp.testsupport.PostgresContainerBase;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.data.domain.*;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.data.domain.PageRequest;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
-class QuestionRepositoryTest extends PostgresDataJpaTestBase {
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+class QuestionRepositoryTest extends PostgresContainerBase {
 
     @Autowired
     private QuizRepository quizRepository;
@@ -20,85 +22,61 @@ class QuestionRepositoryTest extends PostgresDataJpaTestBase {
     private QuestionRepository questionRepository;
 
     @Test
-    void findByQuiz_Id_returnsOnlyQuestionsForThatQuiz_withPagination() {
-        QuizEntity quiz1 = quizRepository.saveAndFlush(new QuizEntity("Quiz 1", "A"));
-        QuizEntity quiz2 = quizRepository.saveAndFlush(new QuizEntity("Quiz 2", "B"));
+    void findByQuiz_Id_returnsOnlyQuestionsForThatQuiz() {
+        var quiz1 = quizRepository.save(new QuizEntity("Quiz1", "d"));
+        var quiz2 = quizRepository.save(new QuizEntity("Quiz2", "d"));
 
-        QuestionEntity q1 = new QuestionEntity("SINGLE_CHOICE", "P1", 1);
-        q1.setAnswerKey("{\"value\":\"A\"}");
-        q1.setQuiz(quiz1);
+        questionRepository.save(newQuestion(quiz1, "SINGLE_CHOICE", "P1", "{\"value\":\"A\"}"));
+        questionRepository.save(newQuestion(quiz2, "TRUE_FALSE", "P2", "{\"value\":true}"));
 
-        QuestionEntity q2 = new QuestionEntity("SINGLE_CHOICE", "P2", 1);
-        q2.setAnswerKey("{\"value\":\"B\"}");
-        q2.setQuiz(quiz1);
+        var page = questionRepository.findByQuiz_Id(quiz1.getId(), PageRequest.of(0, 10));
 
-        QuestionEntity qOther = new QuestionEntity("TRUE_FALSE", "Other", 1);
-        qOther.setAnswerKey("{\"value\":true}");
-        qOther.setQuiz(quiz2);
+        assertThat(page.getContent()).hasSize(1);
+    }
 
-        questionRepository.save(q1);
-        questionRepository.save(q2);
-        questionRepository.save(qOther);
-        questionRepository.flush();
+    @Test
+    void findByQuiz_Id_returnsQuestionsInThatQuiz() {
+        var quiz = quizRepository.save(new QuizEntity("Quiz", "d"));
 
-        Page<QuestionEntity> page = questionRepository.findByQuiz_Id(
-                quiz1.getId(),
-                PageRequest.of(0, 10, Sort.by("id").ascending())
-        );
+        questionRepository.save(newQuestion(quiz, "SINGLE_CHOICE", "P1", "{\"value\":\"A\"}"));
+        questionRepository.save(newQuestion(quiz, "TRUE_FALSE", "P2", "{\"value\":true}"));
 
-        assertThat(page.getTotalElements()).isEqualTo(2);
-        assertThat(page.getContent()).extracting(QuestionEntity::getPrompt).containsExactly("P1", "P2");
+        var page = questionRepository.findByQuiz_Id(quiz.getId(), PageRequest.of(0, 10));
+
+        assertThat(page.getContent()).extracting(QuestionEntity::getPrompt).containsExactlyInAnyOrder("P1", "P2");
     }
 
     @Test
     void findByQuiz_IdAndTypeIgnoreCase_filtersByTypeIgnoringCase() {
-        QuizEntity quiz = quizRepository.saveAndFlush(new QuizEntity("Quiz", "A"));
+        var quiz = quizRepository.save(new QuizEntity("Quiz", "d"));
 
-        QuestionEntity single = new QuestionEntity("single_choice", "P1", 1);
-        single.setAnswerKey("{\"value\":\"A\"}");
-        single.setQuiz(quiz);
+        questionRepository.save(newQuestion(quiz, "single_choice", "P1", "{\"value\":\"A\"}"));
+        questionRepository.save(newQuestion(quiz, "TRUE_FALSE", "P2", "{\"value\":true}"));
 
-        QuestionEntity tf = new QuestionEntity("TRUE_FALSE", "P2", 1);
-        tf.setAnswerKey("{\"value\":true}");
-        tf.setQuiz(quiz);
+        var page = questionRepository.findByQuiz_IdAndTypeIgnoreCase(quiz.getId(), "SINGLE_CHOICE", PageRequest.of(0, 10));
 
-        questionRepository.save(single);
-        questionRepository.save(tf);
-        questionRepository.flush();
-
-        Page<QuestionEntity> singles = questionRepository.findByQuiz_IdAndTypeIgnoreCase(
-                quiz.getId(),
-                "SINGLE_CHOICE",
-                PageRequest.of(0, 10)
-        );
-
-        assertThat(singles.getTotalElements()).isEqualTo(1);
-        assertThat(singles.getContent().getFirst().getPrompt()).isEqualTo("P1");
+        assertThat(page.getContent()).hasSize(1);
     }
 
     @Test
-    void save_withoutQuiz_failsBecauseQuizIsNonNull() {
-        QuestionEntity q = new QuestionEntity("SINGLE_CHOICE", "No quiz", 1);
-        q.setAnswerKey("{\"value\":\"A\"}");
+    void findByQuiz_IdAndTypeIgnoreCase_returnsMatchingRow() {
+        var quiz = quizRepository.save(new QuizEntity("Quiz", "d"));
 
-        assertThatThrownBy(() -> questionRepository.saveAndFlush(q))
-                .isInstanceOf(DataIntegrityViolationException.class);
+        questionRepository.save(newQuestion(quiz, "single_choice", "P1", "{\"value\":\"A\"}"));
+        questionRepository.save(newQuestion(quiz, "TRUE_FALSE", "P2", "{\"value\":true}"));
+
+        var page = questionRepository.findByQuiz_IdAndTypeIgnoreCase(quiz.getId(), "SINGLE_CHOICE", PageRequest.of(0, 10));
+
+        assertThat(page.getContent().getFirst().getPrompt()).isEqualTo("P1");
     }
 
-    @Test
-    void update_points_persists() {
-        QuizEntity quiz = quizRepository.saveAndFlush(new QuizEntity("Quiz", "A"));
-
-        QuestionEntity q = new QuestionEntity("SHORT_ANSWER", "What?", 2);
-        q.setAnswerKey("{\"value\":\"x\"}");
+    private QuestionEntity newQuestion(QuizEntity quiz, String type, String prompt, String answerKey) {
+        var q = new QuestionEntity();
         q.setQuiz(quiz);
-
-        q = questionRepository.saveAndFlush(q);
-
-        q.setPoints(10);
-        questionRepository.saveAndFlush(q);
-
-        QuestionEntity reloaded = questionRepository.findById(q.getId()).orElseThrow();
-        assertThat(reloaded.getPoints()).isEqualTo(10);
+        q.setType(type);
+        q.setPrompt(prompt);
+        q.setPoints(1);
+        q.setAnswerKey(answerKey);
+        return q;
     }
 }

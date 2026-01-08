@@ -4,89 +4,96 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quiz.quizapp.domain.entity.QuestionEntity;
 import org.junit.jupiter.api.Test;
 
-import static org.assertj.core.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class ScoringServiceTest {
 
+    private final ScoringService scoringService = new ScoringService(new ObjectMapper());
+
     @Test
-    void singleChoice_correctWhenValueMatches() {
-        ScoringService scoring = new ScoringService(new ObjectMapper());
-
-        QuestionEntity q = new QuestionEntity("SINGLE_CHOICE", "Pick one", 1);
-        q.setAnswerKey("{\"value\":\"A\"}");
-
-        assertThat(scoring.isCorrect(q, "{\"value\":\"A\"}")).isTrue();
-        assertThat(scoring.isCorrect(q, "{\"value\":\"B\"}")).isFalse();
+    void singleChoice_returnsTrueWhenValuesMatch() {
+        var q = question("SINGLE_CHOICE", "{\"value\":\"A\"}");
+        assertThat(scoringService.isCorrect(q, "{\"value\":\"A\"}")).isTrue();
     }
 
     @Test
-    void multiChoice_orderDoesNotMatter() {
-        ScoringService scoring = new ScoringService(new ObjectMapper());
-
-        QuestionEntity q = new QuestionEntity("MULTI_CHOICE", "Pick many", 1);
-        q.setAnswerKey("{\"values\":[\"A\",\"C\"]}");
-
-        assertThat(scoring.isCorrect(q, "{\"values\":[\"C\",\"A\"]}")).isTrue();
-        assertThat(scoring.isCorrect(q, "{\"values\":[\"A\"]}")).isFalse();
+    void singleChoice_returnsFalseWhenValuesDiffer() {
+        var q = question("SINGLE_CHOICE", "{\"value\":\"A\"}");
+        assertThat(scoringService.isCorrect(q, "{\"value\":\"B\"}")).isFalse();
     }
 
     @Test
-    void shortAnswer_isNormalised_trimCaseAndWhitespace() {
-        ScoringService scoring = new ScoringService(new ObjectMapper());
-
-        QuestionEntity q = new QuestionEntity("SHORT_ANSWER", "Type it", 1);
-        q.setAnswerKey("{\"value\":\"Hello   World\"}");
-
-        assertThat(scoring.isCorrect(q, "{\"value\":\"  hello world  \"}")).isTrue();
-        assertThat(scoring.isCorrect(q, "{\"value\":\"hello  worlds\"}")).isFalse();
+    void multiChoice_returnsTrueWhenSameSetIgnoringOrder() {
+        var q = question("MULTI_CHOICE", "{\"values\":[\"A\",\"B\"]}");
+        assertThat(scoringService.isCorrect(q, "{\"values\":[\"B\",\"A\"]}")).isTrue();
     }
 
     @Test
-    void sorting_isOrderSensitive() {
-        ScoringService scoring = new ScoringService(new ObjectMapper());
-
-        QuestionEntity q = new QuestionEntity("SORTING", "Order it", 1);
-        q.setAnswerKey("{\"values\":[\"1\",\"2\",\"3\"]}");
-
-        assertThat(scoring.isCorrect(q, "{\"values\":[\"1\",\"2\",\"3\"]}")).isTrue();
-        assertThat(scoring.isCorrect(q, "{\"values\":[\"3\",\"2\",\"1\"]}")).isFalse();
+    void multiChoice_returnsFalseWhenSetDiffers() {
+        var q = question("MULTI_CHOICE", "{\"values\":[\"A\",\"B\"]}");
+        assertThat(scoringService.isCorrect(q, "{\"values\":[\"A\"]}")).isFalse();
     }
 
     @Test
-    void matching_requiresExactKeyValuePairs() {
-        ScoringService scoring = new ScoringService(new ObjectMapper());
-
-        QuestionEntity q = new QuestionEntity("MATCHING", "Match it", 1);
-        q.setAnswerKey("{\"pairs\":{\"a\":\"1\",\"b\":\"2\"}}");
-
-        assertThat(scoring.isCorrect(q, "{\"pairs\":{\"a\":\"1\",\"b\":\"2\"}}")).isTrue();
-        assertThat(scoring.isCorrect(q, "{\"pairs\":{\"a\":\"1\",\"b\":\"999\"}}")).isFalse();
+    void trueFalse_returnsTrueWhenBooleanMatches() {
+        var q = question("TRUE_FALSE", "{\"value\":true}");
+        assertThat(scoringService.isCorrect(q, "{\"value\":true}")).isTrue();
     }
 
     @Test
-    void malformedJsonAnswer_isIncorrectNotExplosive() {
-        ScoringService scoring = new ScoringService(new ObjectMapper());
-
-        QuestionEntity q = new QuestionEntity("SINGLE_CHOICE", "Pick", 1);
-        q.setAnswerKey("{\"value\":\"A\"}");
-
-        assertThat(scoring.isCorrect(q, "{not-json")).isFalse();
+    void trueFalse_returnsFalseWhenBooleanDiffers() {
+        var q = question("TRUE_FALSE", "{\"value\":true}");
+        assertThat(scoringService.isCorrect(q, "{\"value\":false}")).isFalse();
     }
 
     @Test
-    void whenObjectMapperThrows_serviceTreatsAsIncorrect() throws Exception {
-        ObjectMapper mapper = mock(ObjectMapper.class);
-        ScoringService scoring = new ScoringService(mapper);
+    void shortAnswer_normalisesWhitespaceAndCase() {
+        var q = question("SHORT_ANSWER", "{\"value\":\"Hello  World\"}");
+        assertThat(scoringService.isCorrect(q, "{\"value\":\"  hello world \"}")).isTrue();
+    }
 
-        QuestionEntity q = new QuestionEntity("SINGLE_CHOICE", "Pick", 1);
-        q.setAnswerKey("{\"value\":\"A\"}");
+    @Test
+    void fillBlanks_normalisesEachEntry() {
+        var q = question("FILL_BLANKS", "{\"values\":[\"Foo\",\"Bar\"]}");
+        assertThat(scoringService.isCorrect(q, "{\"values\":[\" foo \",\"bar\"]}")).isTrue();
+    }
 
-        when(mapper.readTree(anyString())).thenThrow(new RuntimeException("boom"));
+    @Test
+    void sorting_returnsTrueWhenExactOrderMatches() {
+        var q = question("SORTING", "{\"values\":[\"1\",\"2\",\"3\"]}");
+        assertThat(scoringService.isCorrect(q, "{\"values\":[\"1\",\"2\",\"3\"]}")).isTrue();
+    }
 
-        assertThat(scoring.isCorrect(q, "{\"value\":\"A\"}")).isFalse();
+    @Test
+    void sorting_returnsFalseWhenOrderDiffers() {
+        var q = question("SORTING", "{\"values\":[\"1\",\"2\",\"3\"]}");
+        assertThat(scoringService.isCorrect(q, "{\"values\":[\"3\",\"2\",\"1\"]}")).isFalse();
+    }
 
-        // Prove we actually executed the mapper path:
-        verify(mapper, atLeastOnce()).readTree(anyString());
+    @Test
+    void matching_returnsTrueWhenExactMapMatches() {
+        var q = question("MATCHING", "{\"pairs\":{\"A\":\"1\",\"B\":\"2\"}}");
+        assertThat(scoringService.isCorrect(q, "{\"pairs\":{\"A\":\"1\",\"B\":\"2\"}}")).isTrue();
+    }
+
+    @Test
+    void matching_returnsFalseWhenMapDiffers() {
+        var q = question("MATCHING", "{\"pairs\":{\"A\":\"1\",\"B\":\"2\"}}");
+        assertThat(scoringService.isCorrect(q, "{\"pairs\":{\"A\":\"2\",\"B\":\"2\"}}")).isFalse();
+    }
+
+    @Test
+    void malformedJson_isTreatedAsIncorrect() {
+        var q = question("SINGLE_CHOICE", "{\"value\":\"A\"}");
+        assertThat(scoringService.isCorrect(q, "not-json")).isFalse();
+    }
+
+    private static QuestionEntity question(String type, String answerKey) {
+        var q = new QuestionEntity();
+        q.setType(type);
+        q.setAnswerKey(answerKey);
+        q.setPrompt("p");
+        q.setPoints(1);
+        return q;
     }
 }

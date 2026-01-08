@@ -1,9 +1,7 @@
 package com.quiz.quizapp.domain.service;
 
-import com.quiz.quizapp.api.dto.AttemptResponse;
-import com.quiz.quizapp.api.dto.FinishAttemptRequest;
-import com.quiz.quizapp.api.dto.StartAttemptRequest;
 import com.quiz.quizapp.common.ResourceNotFoundException;
+import com.quiz.quizapp.domain.dto.AttemptInfo;
 import com.quiz.quizapp.domain.entity.AttemptEntity;
 import com.quiz.quizapp.domain.repository.AttemptRepository;
 import com.quiz.quizapp.domain.repository.QuizRepository;
@@ -22,27 +20,28 @@ public class AttemptService {
     }
 
     @Transactional
-    public AttemptResponse start(long quizId, StartAttemptRequest req) {
+    public AttemptInfo start(long quizId, String nickname) {
         var quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found: " + quizId));
 
-        AttemptEntity attempt = new AttemptEntity(quiz, req.nickname().trim());
+        String cleanedNickname = nickname == null ? "" : nickname.trim();
+        AttemptEntity attempt = new AttemptEntity(quiz, cleanedNickname);
         AttemptEntity saved = attemptRepository.save(attempt);
-        return toResponse(saved);
+        return toInfo(saved);
     }
 
     @Transactional
-    public AttemptResponse finish(long attemptId, FinishAttemptRequest req) {
+    public AttemptInfo finish(long attemptId, int score) {
         var attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
 
-        attempt.setScore(req.score());
+        attempt.setScore(score);
         attempt.finishNow();
-        return toResponse(attempt);
+        return toInfo(attempt);
     }
 
-    private AttemptResponse toResponse(AttemptEntity a) {
-        return new AttemptResponse(
+    private AttemptInfo toInfo(AttemptEntity a) {
+        return new AttemptInfo(
                 a.getId(),
                 a.getQuiz().getId(),
                 a.getNickname(),

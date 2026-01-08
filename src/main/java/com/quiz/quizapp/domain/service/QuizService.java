@@ -1,16 +1,15 @@
 package com.quiz.quizapp.domain.service;
 
-import com.quiz.quizapp.api.dto.CreateQuizRequest;
-import com.quiz.quizapp.api.dto.QuizResponse;
 import com.quiz.quizapp.common.ResourceNotFoundException;
+import com.quiz.quizapp.domain.dto.QuizCreateCommand;
+import com.quiz.quizapp.domain.dto.QuizInfo;
+import com.quiz.quizapp.domain.dto.QuizUpdateCommand;
 import com.quiz.quizapp.domain.entity.QuizEntity;
 import com.quiz.quizapp.domain.repository.QuizRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.quiz.quizapp.api.dto.UpdateQuizRequest;
-
 
 @Service
 public class QuizService {
@@ -22,43 +21,43 @@ public class QuizService {
     }
 
     @Transactional(readOnly = true)
-    public Page<QuizResponse> list(Pageable pageable) {
-        return quizRepository.findAll(pageable).map(this::toResponse);
+    public Page<QuizInfo> list(Pageable pageable) {
+        return quizRepository.findAll(pageable).map(this::toInfo);
     }
 
     @Transactional(readOnly = true)
-    public QuizResponse get(long id) {
+    public QuizInfo get(long id) {
         QuizEntity entity = quizRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found: " + id));
-        return toResponse(entity);
+        return toInfo(entity);
     }
 
     @Transactional
-    public QuizResponse create(CreateQuizRequest req) {
-        QuizEntity q = new QuizEntity(req.title(), req.description());
-        q.setRandomiseQuestions(req.randomiseQuestions());
-        q.setRandomiseAnswers(req.randomiseAnswers());
-        q.setTimeLimitSeconds(req.timeLimitSeconds());
-        q.setNegativePointsEnabled(req.negativePointsEnabled());
+    public QuizInfo create(QuizCreateCommand cmd) {
+        QuizEntity q = new QuizEntity(cmd.title(), cmd.description());
+        q.setRandomiseQuestions(cmd.randomiseQuestions());
+        q.setRandomiseAnswers(cmd.randomiseAnswers());
+        q.setTimeLimitSeconds(cmd.timeLimitSeconds());
+        q.setNegativePointsEnabled(cmd.negativePointsEnabled());
 
         QuizEntity saved = quizRepository.save(q);
-        return toResponse(saved);
+        return toInfo(saved);
     }
 
     @Transactional
-    public QuizResponse update(long id, UpdateQuizRequest req) {
+    public QuizInfo update(long id, QuizUpdateCommand cmd) {
         QuizEntity q = quizRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found: " + id));
 
-        q.setTitle(req.title());
-        q.setDescription(req.description());
-        q.setRandomiseQuestions(req.randomiseQuestions());
-        q.setRandomiseAnswers(req.randomiseAnswers());
-        q.setTimeLimitSeconds(req.timeLimitSeconds());
-        q.setNegativePointsEnabled(req.negativePointsEnabled());
+        q.setTitle(cmd.title());
+        q.setDescription(cmd.description());
+        q.setRandomiseQuestions(cmd.randomiseQuestions());
+        q.setRandomiseAnswers(cmd.randomiseAnswers());
+        q.setTimeLimitSeconds(cmd.timeLimitSeconds());
+        q.setNegativePointsEnabled(cmd.negativePointsEnabled());
 
         QuizEntity saved = quizRepository.save(q);
-        return toResponse(saved);
+        return toInfo(saved);
     }
 
     @Transactional
@@ -69,8 +68,8 @@ public class QuizService {
         quizRepository.deleteById(id);
     }
 
-    private QuizResponse toResponse(QuizEntity q) {
-        return new QuizResponse(
+    private QuizInfo toInfo(QuizEntity q) {
+        return new QuizInfo(
                 q.getId(),
                 q.getTitle(),
                 q.getDescription(),

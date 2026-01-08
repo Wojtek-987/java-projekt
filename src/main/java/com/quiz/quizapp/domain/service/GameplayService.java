@@ -1,23 +1,18 @@
 package com.quiz.quizapp.domain.service;
 
-import com.quiz.quizapp.api.dto.QuestionForPlayResponse;
-import com.quiz.quizapp.api.dto.SubmitAnswersRequest;
-import com.quiz.quizapp.api.dto.SubmitAnswersResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.quiz.quizapp.common.ResourceNotFoundException;
+import com.quiz.quizapp.domain.dto.QuestionForPlayDto;
+import com.quiz.quizapp.domain.dto.SubmitAnswersCommand;
+import com.quiz.quizapp.domain.dto.SubmitOutcome;
 import com.quiz.quizapp.domain.entity.AttemptAnswerEntity;
 import com.quiz.quizapp.domain.repository.AttemptAnswerRepository;
 import com.quiz.quizapp.domain.repository.AttemptRepository;
 import com.quiz.quizapp.domain.repository.QuestionRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 import java.time.OffsetDateTime;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-
-
 import java.util.*;
 
 @Service
@@ -28,7 +23,6 @@ public class GameplayService {
     private final AttemptAnswerRepository attemptAnswerRepository;
     private final ScoringService scoringService;
     private final ObjectMapper objectMapper;
-
 
     public GameplayService(
             AttemptRepository attemptRepository,
@@ -44,40 +38,39 @@ public class GameplayService {
         this.objectMapper = objectMapper;
     }
 
-
     @Transactional(readOnly = true)
-    public List<QuestionForPlayResponse> questionsForAttempt(long attemptId) {
+    public List<QuestionForPlayDto> questionsForAttempt(long attemptId) {
         var attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
-
-        var quiz = attempt.getQuiz();
-        var page = questionRepository.findByQuiz_Id(quiz.getId(), org.springframework.data.domain.Pageable.unpaged());
-        List<QuestionForPlayResponse> questions = page.getContent().stream()
-                .map(q -> new QuestionForPlayResponse(q.getId(), q.getType(), q.getPrompt(), q.getPoints(), q.getOptions()))
-                .toList();
 
         if (attempt.getFinishedAt() != null) {
             throw new IllegalStateException("Attempt already finished");
         }
 
+        var quiz = attempt.getQuiz();
+        var page = questionRepository.findByQuiz_Id(quiz.getId(), org.springframework.data.domain.Pageable.unpaged());
+
+        List<QuestionForPlayDto> questions = page.getContent().stream()
+                .map(q -> new QuestionForPlayDto(q.getId(), q.getType(), q.getPrompt(), q.getPoints(), q.getOptions()))
+                .toList();
 
         if (quiz.isRandomiseQuestions()) {
-            List<QuestionForPlayResponse> shuffled = new ArrayList<>(questions);
+            List<QuestionForPlayDto> shuffled = new ArrayList<>(questions);
             Collections.shuffle(shuffled);
             return shuffled;
         }
+
         return questions;
     }
 
     @Transactional
-    public SubmitAnswersResponse submitAndFinish(long attemptId, SubmitAnswersRequest req) {
+    public SubmitOutcome submitAndFinish(long attemptId, SubmitAnswersCommand req) {
         var attempt = attemptRepository.findById(attemptId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attempt not found: " + attemptId));
 
         if (attempt.getFinishedAt() != null) {
             throw new IllegalStateException("Attempt already finished");
         }
-
 
         var quiz = attempt.getQuiz();
         boolean negativeEnabled = quiz.isNegativePointsEnabled();
@@ -96,7 +89,6 @@ public class GameplayService {
             var q = questionRepository.findById(ansReq.questionId())
                     .orElseThrow(() -> new ResourceNotFoundException("Question not found: " + ansReq.questionId()));
 
-            // Ensure the question belongs to the quiz
             if (!Objects.equals(q.getQuiz().getId(), quiz.getId())) {
                 throw new IllegalArgumentException("Question does not belong to quiz");
             }
@@ -112,6 +104,6 @@ public class GameplayService {
         attempt.setScore(total);
         attempt.finishNow();
 
-        return new SubmitAnswersResponse(attempt.getId(), attempt.getScore());
+        return new SubmitOutcome(attempt.getId(), attempt.getScore());
     }
 }

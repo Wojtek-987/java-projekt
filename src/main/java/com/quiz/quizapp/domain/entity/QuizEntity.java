@@ -56,18 +56,6 @@ public class QuizEntity {
     )
     private Set<TagEntity> tags = new HashSet<>();
 
-    public Set<TagEntity> getTags() { return tags; }
-
-    public void addTag(TagEntity tag) {
-        tags.add(tag);
-        tag.getQuizzes().add(this);
-    }
-
-    public void removeTag(TagEntity tag) {
-        tags.remove(tag);
-        tag.getQuizzes().remove(this);
-    }
-
 
     @PrePersist
     void prePersist() {
