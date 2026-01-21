@@ -48,7 +48,6 @@ public class PlayController {
             @RequestParam MultiValueMap<String, String> params,
             RedirectAttributes ra
     ) {
-        // Errors are handled globally by WebExceptionHandler (flash + redirect-back).
         PlayFacade.SubmitOutcome outcome = playFacade.submitAttempt(attemptId, params);
         ra.addFlashAttribute("lastScore", outcome.totalScore());
         return "redirect:/play/quizzes/" + outcome.quizId() + "/ranking";

@@ -60,7 +60,6 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     ResponseEntity<ApiErrorResponse> generic(Exception ex, HttpServletRequest req) {
-        // Avoid leaking internals
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(base(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error", req, List.of()));
     }

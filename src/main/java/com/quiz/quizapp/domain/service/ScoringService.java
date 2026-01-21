@@ -35,7 +35,6 @@ public class ScoringService {
                 default -> false;
             };
         } catch (Exception e) {
-            // Malformed JSON => treat as incorrect
             return false;
         }
     }

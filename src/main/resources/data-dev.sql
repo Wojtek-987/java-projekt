@@ -10,10 +10,9 @@ values
                             time_limit_seconds = excluded.time_limit_seconds,
                             negative_points_enabled = excluded.negative_points_enabled;
 
--- reset questions for dev
 delete from questions where quiz_id in (1, 2);
 
--- quiz 1: all 8 types (required)
+-- quiz 1
 insert into questions (quiz_id, type, prompt, points, options, answer_key)
 values
     (1, 'SINGLE_CHOICE', 'Entry point method name in Java?', 2,
@@ -48,7 +47,7 @@ values
      '{"left":["JVM","JRE"],"right":["1","2"]}'::jsonb,
      '{"pairs":{"JVM":"1","JRE":"2"}}'::jsonb);
 
--- quiz 2: keep a couple of demo questions if you want (optional)
+-- quiz 2
 insert into questions (quiz_id, type, prompt, points, answer_key)
 values
     (2, 'SHORT_ANSWER', 'What annotation marks a Spring REST controller?', 2, '{"value":"@RestController"}'::jsonb),

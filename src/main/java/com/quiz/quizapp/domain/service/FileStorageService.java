@@ -36,7 +36,6 @@ public class FileStorageService {
             throw new IllegalArgumentException("Invalid file name");
         }
 
-        // avoid overwrites
         String storedName = System.currentTimeMillis() + "-" + original;
 
         try {

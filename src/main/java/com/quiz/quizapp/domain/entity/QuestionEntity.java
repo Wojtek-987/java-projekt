@@ -14,7 +14,6 @@ public class QuestionEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // we’ll later formalise this as an enum + polymorphism; for now string keeps migrations simple
     @Column(nullable = false, length = 50)
     private String type;
 
@@ -54,7 +53,6 @@ public class QuestionEntity {
         if (createdAt == null) createdAt = OffsetDateTime.now();
     }
 
-    // --- getters/setters ---
 
     public String getOptions() { return options; }
     public void setOptions(String options) { this.options = options; }

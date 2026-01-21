@@ -11,7 +11,6 @@ RUN mvn -DskipTests clean package
 FROM eclipse-temurin:21-jre
 WORKDIR /app
 
-# copy the built jar (Spring Boot jar)
 COPY --from=build /app/target/*.jar app.jar
 
 EXPOSE 8080

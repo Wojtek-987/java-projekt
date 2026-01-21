@@ -16,13 +16,12 @@ public class CreateQuestionForm {
 
     @NotBlank
     @Size(max = 50)
-    private String type; // matches the strings used in scoring service
+    private String type;
 
     @NotNull
     @PositiveOrZero
     private Integer points;
 
-    // optional JSON
     private String optionsJson;
 
     @NotBlank

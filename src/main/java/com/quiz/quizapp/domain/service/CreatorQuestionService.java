@@ -26,7 +26,6 @@ public class CreatorQuestionService {
         var quiz = quizRepository.findById(quizId)
                 .orElseThrow(() -> new ResourceNotFoundException("Quiz not found: " + quizId));
 
-        // Validate JSON (fail fast with IllegalArgumentException)
         validateJsonOrEmpty(optionsJson);
         validateJson(answerKeyJson);
 

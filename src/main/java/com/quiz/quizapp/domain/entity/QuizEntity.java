@@ -62,7 +62,6 @@ public class QuizEntity {
         if (createdAt == null) createdAt = OffsetDateTime.now();
     }
 
-    // --- getters/setters ---
 
     public Long getId() { return id; }
 

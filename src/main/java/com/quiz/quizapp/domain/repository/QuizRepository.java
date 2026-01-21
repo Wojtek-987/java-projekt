@@ -8,10 +8,8 @@ import org.springframework.data.jpa.repository.Query;
 
 public interface QuizRepository extends JpaRepository<QuizEntity, Long> {
 
-    // Derived query + pagination
     Page<QuizEntity> findByTitleContainingIgnoreCase(String title, Pageable pageable);
 
-    // Explicit JPQL query (custom)
     @Query("""
         select q
         from QuizEntity q
